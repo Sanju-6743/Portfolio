@@ -166,6 +166,13 @@ copy .env.example .env
 npm start
 ```
 
+### Vercel Deployment
+The project is ready for Vercel as a static site with a serverless contact API.
+- The site is served from the repository root.
+- The contact form API runs from `api/contact.js` at `/api/contact`.
+- Set the environment variables in Vercel: `EMAIL_USER`, `EMAIL_PASS`, `OWNER_EMAIL`.
+- Deploy with the Vercel CLI or through the Vercel dashboard.
+
 ### Contact Form Email Automation
 The contact form is configured to send two emails in real time:
 - A notification email to your owner account

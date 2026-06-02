@@ -5,7 +5,8 @@
   "description": "Advanced responsive portfolio with real-time Gmail automation and dark mode.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "vercel-build": "echo \"No build required\""
   },
   "dependencies": {
     "cors": "^2.8.5",
