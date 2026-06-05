@@ -178,10 +178,15 @@ The contact form is configured to send two emails in real time:
 - A notification email to your owner account
 - An acknowledgement email to the visitor
 
-Use the `.env` file to set:
-- `EMAIL_USER` (Gmail address)
-- `EMAIL_PASS` (Gmail app password)
-- `OWNER_EMAIL` (email to receive contact notifications)
+Use the `.env` file to set these values:
+```env
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASS=your-gmail-app-password
+OWNER_EMAIL=your-owner-email@gmail.com
+PORT=3000
+```
+
+Put this file in the project root as `.env` and restart the server.
 
 ### For Backend Integration
 The contact form is implemented using Node.js/Express and Nodemailer.

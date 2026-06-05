@@ -533,3 +533,151 @@ window.addEventListener('error', (event) => {
 // ===== Console Greeting =====
 console.log('%c🎨 Welcome to Sanjay Reddy\'s Portfolio', 'color: #a855f7; font-size: 20px; font-weight: bold;');
 console.log('%cBuilt with Three.js, Tailwind CSS, and cutting-edge web technologies', 'color: #ec4899; font-size: 14px;');
+
+// ===== Projects: fetch, render, realtime (SSE), and admin actions =====
+const projectsGrid = document.getElementById('projectsGrid');
+const addProjectBtn = document.getElementById('addProjectBtn');
+const adminToggleBtn = document.getElementById('adminToggleBtn');
+const adminModal = document.getElementById('adminModal');
+const adminLoginBtn = document.getElementById('adminLoginBtn');
+const adminCancelBtn = document.getElementById('adminCancelBtn');
+const adminSecretInput = document.getElementById('adminSecretInput');
+const projectModal = document.getElementById('projectModal');
+const projectSaveBtn = document.getElementById('projectSaveBtn');
+const projectCancelBtn = document.getElementById('projectCancelBtn');
+const projectTitle = document.getElementById('projectTitle');
+const projectDesc = document.getElementById('projectDesc');
+const projectURL = document.getElementById('projectURL');
+const projectDate = document.getElementById('projectDate');
+
+let adminSecret = sessionStorage.getItem('adminSecret') || null;
+
+const setAdminMode = (enabled) => {
+    if (enabled) {
+        addProjectBtn.classList.remove('hidden');
+        adminToggleBtn.textContent = 'Admin ✓';
+    } else {
+        addProjectBtn.classList.add('hidden');
+        adminToggleBtn.textContent = 'Admin';
+    }
+};
+
+// Render projects into grid
+function renderProjects(list = []) {
+    if (!projectsGrid) return;
+    projectsGrid.innerHTML = '';
+    list.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'bg-slate-800 rounded-xl p-4 border border-purple-500/10 hover:scale-105 transition transform';
+        card.innerHTML = `
+            <div class="flex items-start justify-between gap-2">
+                <div>
+                    <h4 class="text-lg font-bold mb-1">${escapeHtml(p.title)}</h4>
+                    <p class="text-sm text-gray-300 mb-3">${escapeHtml(p.description || '')}</p>
+                    <div class="text-xs text-gray-400">${new Date(p.date).toLocaleDateString()}</div>
+                </div>
+                <div class="flex-shrink-0">
+                    <a href="${encodeURI(p.url)}" target="_blank" rel="noopener noreferrer" class="inline-block px-3 py-2 bg-purple-600 rounded text-sm font-semibold">Open</a>
+                </div>
+            </div>
+        `;
+        projectsGrid.appendChild(card);
+    });
+}
+
+function escapeHtml(text) {
+    return String(text || '').replace(/[&"'<>]/g, function (s) {
+        return ({'&':'&amp;','"':'&quot;','\'':'&#39;','<':'&lt;','>':'&gt;'})[s];
+    });
+}
+
+// Fetch initial projects
+async function fetchProjects() {
+    try {
+        const res = await fetch('/api/projects');
+        const data = await res.json();
+        if (data && data.success) renderProjects(data.projects || []);
+    } catch (e) {
+        console.warn('Could not load projects:', e.message);
+    }
+}
+
+// SSE subscription for realtime updates
+function subscribeProjectsSSE() {
+    if (!window.EventSource) return;
+    try {
+        const es = new EventSource('/api/projects/stream');
+        es.onmessage = (e) => {
+            try {
+                const payload = JSON.parse(e.data);
+                if (payload.projects) renderProjects(payload.projects);
+            } catch (err) {
+                console.debug('SSE parse error', err.message);
+            }
+        };
+        es.onerror = (err) => {
+            console.warn('Projects SSE error', err);
+            // leave it — browser will try to reconnect
+        };
+    } catch (err) {
+        console.warn('SSE not available:', err.message);
+    }
+}
+
+// Admin modal handlers
+adminToggleBtn?.addEventListener('click', () => {
+    adminModal.classList.remove('hidden');
+    adminSecretInput.value = '';
+    adminSecretInput.focus();
+});
+adminCancelBtn?.addEventListener('click', () => adminModal.classList.add('hidden'));
+adminLoginBtn?.addEventListener('click', () => {
+    const val = adminSecretInput.value.trim();
+    if (!val) return;
+    // store in session for subsequent requests
+    adminSecret = val;
+    sessionStorage.setItem('adminSecret', adminSecret);
+    setAdminMode(true);
+    adminModal.classList.add('hidden');
+});
+
+// Add project flow
+addProjectBtn?.addEventListener('click', () => {
+    projectModal.classList.remove('hidden');
+});
+projectCancelBtn?.addEventListener('click', () => projectModal.classList.add('hidden'));
+projectSaveBtn?.addEventListener('click', async () => {
+    const title = projectTitle.value.trim();
+    const url = projectURL.value.trim();
+    const description = projectDesc.value.trim();
+    const date = projectDate.value || new Date().toISOString();
+    if (!title || !url) return alert('Please provide title and URL');
+
+    try {
+        const res = await fetch('/api/projects', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-admin-secret': adminSecret || ''
+            },
+            body: JSON.stringify({ title, description, url, date })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+            throw new Error(data.error || 'Failed to add project');
+        }
+        // close modal; SSE will update UI
+        projectModal.classList.add('hidden');
+        projectTitle.value = projectDesc.value = projectURL.value = '';
+        projectDate.value = '';
+    } catch (err) {
+        alert('Could not save project: ' + err.message);
+    }
+});
+
+// Initialize projects UI and SSE
+document.addEventListener('DOMContentLoaded', () => {
+    fetchProjects();
+    subscribeProjectsSSE();
+    setAdminMode(!!adminSecret);
+});

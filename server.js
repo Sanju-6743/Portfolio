@@ -3,6 +3,7 @@ const path = require('path');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
 const dotenv = require('dotenv');
+const fs = require('fs');
 
 dotenv.config();
 
@@ -20,6 +21,90 @@ if (!EMAIL_USER || !EMAIL_PASS) {
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
+
+// Projects storage (simple JSON file)
+const projectsFile = path.join(__dirname, 'projects.json');
+let projects = [];
+try {
+    if (fs.existsSync(projectsFile)) {
+        const raw = fs.readFileSync(projectsFile, 'utf8');
+        projects = JSON.parse(raw || '[]');
+    }
+} catch (err) {
+    console.error('Failed to load projects.json:', err.message);
+    projects = [];
+}
+
+// SSE clients for realtime updates
+const sseClients = [];
+
+function sendSSEUpdate(data) {
+    const payload = `data: ${JSON.stringify(data)}\n\n`;
+    sseClients.forEach((res) => {
+        try {
+            res.write(payload);
+        } catch (e) {
+            // ignore
+        }
+    });
+}
+
+// Public: list projects
+app.get('/api/projects', (req, res) => {
+    res.json({ success: true, projects });
+});
+
+// SSE stream for realtime project updates
+app.get('/api/projects/stream', (req, res) => {
+    res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+        'Access-Control-Allow-Origin': '*'
+    });
+
+    // Send initial payload
+    res.write(`data: ${JSON.stringify({ projects })}\n\n`);
+
+    sseClients.push(res);
+    req.on('close', () => {
+        const idx = sseClients.indexOf(res);
+        if (idx !== -1) sseClients.splice(idx, 1);
+    });
+});
+
+// Admin: create project (requires ADMIN_SECRET in header)
+app.post('/api/projects', (req, res) => {
+    const adminSecret = req.header('x-admin-secret');
+    if (!process.env.ADMIN_SECRET || adminSecret !== process.env.ADMIN_SECRET) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    const { title, description, url, date } = req.body || {};
+    if (!title || !url) {
+        return res.status(400).json({ success: false, error: 'Title and URL are required.' });
+    }
+
+    const project = {
+        id: Date.now().toString(),
+        title: title.trim(),
+        description: (description || '').trim(),
+        url: url.trim(),
+        date: date || new Date().toISOString(),
+    };
+
+    projects.unshift(project);
+    try {
+        fs.writeFileSync(projectsFile, JSON.stringify(projects, null, 2), 'utf8');
+    } catch (err) {
+        console.error('Failed to save projects.json:', err.message);
+    }
+
+    // Notify SSE subscribers with the new projects list
+    sendSSEUpdate({ projects });
+
+    return res.json({ success: true, project });
+});
 
 app.post('/api/contact', async (req, res) => {
     const { name, email, message } = req.body || {};
