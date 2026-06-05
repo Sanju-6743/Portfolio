@@ -647,7 +647,19 @@ adminLoginBtn?.addEventListener('click', async () => {
             }
         });
         
-        const data = await res.json();
+        // Read response as text first to debug
+        const text = await res.text();
+        console.log('Response status:', res.status);
+        console.log('Response text:', text);
+        
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            console.error('Failed to parse JSON:', e, 'Text was:', text);
+            alert('❌ Server error (invalid response). Please try again.');
+            return;
+        }
         
         if (res.status === 401) {
             alert('❌ Incorrect admin secret! Access denied.');
