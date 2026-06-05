@@ -638,34 +638,26 @@ adminLoginBtn?.addEventListener('click', async () => {
         return;
     }
     
-    // Validate secret by trying to fetch projects with it
+    // Validate secret against server
     try {
-        const res = await fetch('/api/projects', {
-            method: 'GET',
+        const res = await fetch('/api/admin/validate', {
+            method: 'POST',
             headers: {
                 'x-admin-secret': val
             }
         });
         
-        // For now, we'll test the secret on POST; validate with a test project creation
-        // Actually, let's just try to get a quick validation by attempting a small request
-        const testRes = await fetch('/api/projects', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-admin-secret': val
-            },
-            body: JSON.stringify({ title: '', url: '' })
-        });
-        
-        // If we get 401, secret is wrong
-        if (testRes.status === 401) {
-            alert('❌ Incorrect admin secret!');
+        if (res.status === 401) {
+            alert('❌ Incorrect admin secret! Access denied.');
             adminSecretInput.value = '';
             return;
         }
         
-        // Secret is correct (or at least accepted by server)
+        if (!res.ok) {
+            throw new Error('Validation failed');
+        }
+        
+        // Secret is correct - enable admin mode
         adminSecret = val;
         sessionStorage.setItem('adminSecret', adminSecret);
         setAdminMode(true);

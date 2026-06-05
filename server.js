@@ -49,6 +49,15 @@ function sendSSEUpdate(data) {
     });
 }
 
+// Admin validation endpoint
+app.post('/api/admin/validate', (req, res) => {
+    const adminSecret = req.header('x-admin-secret');
+    if (!process.env.ADMIN_SECRET || !adminSecret || adminSecret !== process.env.ADMIN_SECRET) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    return res.json({ success: true, message: 'Admin authenticated' });
+});
+
 // Public: list projects
 app.get('/api/projects', (req, res) => {
     res.json({ success: true, projects });
