@@ -631,14 +631,49 @@ adminToggleBtn?.addEventListener('click', () => {
     adminSecretInput.focus();
 });
 adminCancelBtn?.addEventListener('click', () => adminModal.classList.add('hidden'));
-adminLoginBtn?.addEventListener('click', () => {
+adminLoginBtn?.addEventListener('click', async () => {
     const val = adminSecretInput.value.trim();
-    if (!val) return;
-    // store in session for subsequent requests
-    adminSecret = val;
-    sessionStorage.setItem('adminSecret', adminSecret);
-    setAdminMode(true);
-    adminModal.classList.add('hidden');
+    if (!val) {
+        alert('Please enter admin secret');
+        return;
+    }
+    
+    // Validate secret by trying to fetch projects with it
+    try {
+        const res = await fetch('/api/projects', {
+            method: 'GET',
+            headers: {
+                'x-admin-secret': val
+            }
+        });
+        
+        // For now, we'll test the secret on POST; validate with a test project creation
+        // Actually, let's just try to get a quick validation by attempting a small request
+        const testRes = await fetch('/api/projects', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-admin-secret': val
+            },
+            body: JSON.stringify({ title: '', url: '' })
+        });
+        
+        // If we get 401, secret is wrong
+        if (testRes.status === 401) {
+            alert('❌ Incorrect admin secret!');
+            adminSecretInput.value = '';
+            return;
+        }
+        
+        // Secret is correct (or at least accepted by server)
+        adminSecret = val;
+        sessionStorage.setItem('adminSecret', adminSecret);
+        setAdminMode(true);
+        adminModal.classList.add('hidden');
+        alert('✓ Admin mode enabled!');
+    } catch (err) {
+        alert('Error validating secret: ' + err.message);
+    }
 });
 
 // Add project flow
