@@ -49,27 +49,7 @@ function sendSSEUpdate(data) {
     });
 }
 
-// Admin validation endpoint
-app.post('/api/admin/validate', (req, res) => {
-    const adminSecret = req.header('x-admin-secret');
-    console.log('Validating admin secret. Received:', !!adminSecret, 'Expected:', !!process.env.ADMIN_SECRET);
-    
-    if (!process.env.ADMIN_SECRET) {
-        return res.status(500).json({ success: false, error: 'Admin secret not configured' });
-    }
-    
-    if (!adminSecret) {
-        return res.status(401).json({ success: false, error: 'No secret provided' });
-    }
-    
-    if (adminSecret !== process.env.ADMIN_SECRET) {
-        return res.status(401).json({ success: false, error: 'Incorrect secret' });
-    }
-    
-    return res.status(200).json({ success: true, message: 'Admin authenticated' });
-});
-
-// Public: list projects
+// Projects storage (simple JSON file)
 app.get('/api/projects', (req, res) => {
     res.json({ success: true, projects });
 });
@@ -93,13 +73,7 @@ app.get('/api/projects/stream', (req, res) => {
     });
 });
 
-// Admin: create project (requires ADMIN_SECRET in header)
 app.post('/api/projects', (req, res) => {
-    const adminSecret = req.header('x-admin-secret');
-    if (!process.env.ADMIN_SECRET || adminSecret !== process.env.ADMIN_SECRET) {
-        return res.status(401).json({ success: false, error: 'Unauthorized' });
-    }
-
     const { title, description, url, date } = req.body || {};
     if (!title || !url) {
         return res.status(400).json({ success: false, error: 'Title and URL are required.' });
@@ -120,7 +94,6 @@ app.post('/api/projects', (req, res) => {
         console.error('Failed to save projects.json:', err.message);
     }
 
-    // Notify SSE subscribers with the new projects list
     sendSSEUpdate({ projects });
 
     return res.json({ success: true, project });

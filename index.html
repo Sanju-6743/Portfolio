@@ -315,10 +315,6 @@
                 <h2 class="text-4xl md:text-5xl font-bold">
                     <span class="bg-gradient-to-r from-purple-400 to-pink-600 bg-clip-text text-transparent">Projects</span>
                 </h2>
-                <div class="flex items-center gap-2">
-                    <button id="adminToggleBtn" class="cta-button secondary">Admin</button>
-                    <button id="addProjectBtn" class="cta-button primary hidden" title="Add project">+ Add Project</button>
-                </div>
             </div>
 
             <div id="projectsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
@@ -509,35 +505,7 @@
     </footer>
 
     <!-- Scripts -->
-    <!-- Admin Login Modal -->
-    <div id="adminModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-        <div class="bg-slate-900 rounded-xl p-6 w-full max-w-md border border-purple-500/10">
-            <h3 class="text-lg font-bold mb-4">Admin Login</h3>
-            <p class="text-sm text-gray-300 mb-4">Enter your admin secret to enable editing.</p>
-            <input id="adminSecretInput" type="password" placeholder="Admin secret" class="input-field w-full mb-4">
-            <div class="flex gap-4 justify-end">
-                <button id="adminCancelBtn" class="cta-button secondary">Cancel</button>
-                <button id="adminLoginBtn" class="cta-button primary">Login</button>
-            </div>
-        </div>
-    </div>
 
-    <!-- Project Modal -->
-    <div id="projectModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-        <div class="bg-slate-900 rounded-xl p-6 w-full max-w-lg border border-purple-500/10">
-            <h3 class="text-lg font-bold mb-4">Add Project</h3>
-            <div class="grid gap-3">
-                <input id="projectTitle" placeholder="Project title" class="input-field">
-                <input id="projectURL" placeholder="Project URL (https://...)" class="input-field">
-                <textarea id="projectDesc" rows="4" placeholder="Short description" class="input-field"></textarea>
-                <input id="projectDate" type="date" class="input-field">
-            </div>
-            <div class="flex gap-4 justify-end mt-4">
-                <button id="projectCancelBtn" class="cta-button secondary">Cancel</button>
-                <button id="projectSaveBtn" class="cta-button primary">Save Project</button>
-            </div>
-        </div>
-    </div>
     <script src="script.js"></script>
     
     <!-- Service Worker Registration -->

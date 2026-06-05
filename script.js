@@ -534,33 +534,8 @@ window.addEventListener('error', (event) => {
 console.log('%c🎨 Welcome to Sanjay Reddy\'s Portfolio', 'color: #a855f7; font-size: 20px; font-weight: bold;');
 console.log('%cBuilt with Three.js, Tailwind CSS, and cutting-edge web technologies', 'color: #ec4899; font-size: 14px;');
 
-// ===== Projects: fetch, render, realtime (SSE), and admin actions =====
+// ===== Projects: fetch, render, realtime (SSE) =====
 const projectsGrid = document.getElementById('projectsGrid');
-const addProjectBtn = document.getElementById('addProjectBtn');
-const adminToggleBtn = document.getElementById('adminToggleBtn');
-const adminModal = document.getElementById('adminModal');
-const adminLoginBtn = document.getElementById('adminLoginBtn');
-const adminCancelBtn = document.getElementById('adminCancelBtn');
-const adminSecretInput = document.getElementById('adminSecretInput');
-const projectModal = document.getElementById('projectModal');
-const projectSaveBtn = document.getElementById('projectSaveBtn');
-const projectCancelBtn = document.getElementById('projectCancelBtn');
-const projectTitle = document.getElementById('projectTitle');
-const projectDesc = document.getElementById('projectDesc');
-const projectURL = document.getElementById('projectURL');
-const projectDate = document.getElementById('projectDate');
-
-let adminSecret = sessionStorage.getItem('adminSecret') || null;
-
-const setAdminMode = (enabled) => {
-    if (enabled) {
-        addProjectBtn.classList.remove('hidden');
-        adminToggleBtn.textContent = 'Admin ✓';
-    } else {
-        addProjectBtn.classList.add('hidden');
-        adminToggleBtn.textContent = 'Admin';
-    }
-};
 
 // Render projects into grid
 function renderProjects(list = []) {
@@ -624,103 +599,8 @@ function subscribeProjectsSSE() {
     }
 }
 
-// Admin modal handlers
-adminToggleBtn?.addEventListener('click', () => {
-    adminModal.classList.remove('hidden');
-    adminSecretInput.value = '';
-    adminSecretInput.focus();
-});
-adminCancelBtn?.addEventListener('click', () => adminModal.classList.add('hidden'));
-adminLoginBtn?.addEventListener('click', async () => {
-    const val = adminSecretInput.value.trim();
-    if (!val) {
-        alert('Please enter admin secret');
-        return;
-    }
-    
-    try {
-        const res = await fetch('/api/admin/validate', {
-            method: 'POST',
-            headers: {
-                'x-admin-secret': val,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        // Read response as text first to debug
-        const text = await res.text();
-        console.log('Response status:', res.status);
-        console.log('Response text:', text);
-        
-        let data;
-        try {
-            data = JSON.parse(text);
-        } catch (e) {
-            console.error('Failed to parse JSON:', e, 'Text was:', text);
-            alert('❌ Server error (invalid response). Please try again.');
-            return;
-        }
-        
-        if (res.status === 401) {
-            alert('❌ Incorrect admin secret! Access denied.');
-            adminSecretInput.value = '';
-            return;
-        }
-        
-        if (!res.ok || !data.success) {
-            alert('❌ Validation error: ' + (data.error || 'Unknown error'));
-            return;
-        }
-        
-        // Secret is correct - enable admin mode
-        adminSecret = val;
-        sessionStorage.setItem('adminSecret', adminSecret);
-        setAdminMode(true);
-        adminModal.classList.add('hidden');
-        alert('✓ Admin mode enabled!');
-    } catch (err) {
-        console.error('Admin validation error:', err);
-        alert('Error validating secret: ' + err.message);
-    }
-});
-
-// Add project flow
-addProjectBtn?.addEventListener('click', () => {
-    projectModal.classList.remove('hidden');
-});
-projectCancelBtn?.addEventListener('click', () => projectModal.classList.add('hidden'));
-projectSaveBtn?.addEventListener('click', async () => {
-    const title = projectTitle.value.trim();
-    const url = projectURL.value.trim();
-    const description = projectDesc.value.trim();
-    const date = projectDate.value || new Date().toISOString();
-    if (!title || !url) return alert('Please provide title and URL');
-
-    try {
-        const res = await fetch('/api/projects', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-admin-secret': adminSecret || ''
-            },
-            body: JSON.stringify({ title, description, url, date })
-        });
-        const data = await res.json();
-        if (!res.ok || !data.success) {
-            throw new Error(data.error || 'Failed to add project');
-        }
-        // close modal; SSE will update UI
-        projectModal.classList.add('hidden');
-        projectTitle.value = projectDesc.value = projectURL.value = '';
-        projectDate.value = '';
-    } catch (err) {
-        alert('Could not save project: ' + err.message);
-    }
-});
-
 // Initialize projects UI and SSE
 document.addEventListener('DOMContentLoaded', () => {
     fetchProjects();
     subscribeProjectsSSE();
-    setAdminMode(!!adminSecret);
 });
