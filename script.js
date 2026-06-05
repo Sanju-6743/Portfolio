@@ -638,14 +638,16 @@ adminLoginBtn?.addEventListener('click', async () => {
         return;
     }
     
-    // Validate secret against server
     try {
         const res = await fetch('/api/admin/validate', {
             method: 'POST',
             headers: {
-                'x-admin-secret': val
+                'x-admin-secret': val,
+                'Content-Type': 'application/json'
             }
         });
+        
+        const data = await res.json();
         
         if (res.status === 401) {
             alert('❌ Incorrect admin secret! Access denied.');
@@ -653,8 +655,9 @@ adminLoginBtn?.addEventListener('click', async () => {
             return;
         }
         
-        if (!res.ok) {
-            throw new Error('Validation failed');
+        if (!res.ok || !data.success) {
+            alert('❌ Validation error: ' + (data.error || 'Unknown error'));
+            return;
         }
         
         // Secret is correct - enable admin mode
@@ -664,6 +667,7 @@ adminLoginBtn?.addEventListener('click', async () => {
         adminModal.classList.add('hidden');
         alert('✓ Admin mode enabled!');
     } catch (err) {
+        console.error('Admin validation error:', err);
         alert('Error validating secret: ' + err.message);
     }
 });

@@ -52,10 +52,21 @@ function sendSSEUpdate(data) {
 // Admin validation endpoint
 app.post('/api/admin/validate', (req, res) => {
     const adminSecret = req.header('x-admin-secret');
-    if (!process.env.ADMIN_SECRET || !adminSecret || adminSecret !== process.env.ADMIN_SECRET) {
-        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    console.log('Validating admin secret. Received:', !!adminSecret, 'Expected:', !!process.env.ADMIN_SECRET);
+    
+    if (!process.env.ADMIN_SECRET) {
+        return res.status(500).json({ success: false, error: 'Admin secret not configured' });
     }
-    return res.json({ success: true, message: 'Admin authenticated' });
+    
+    if (!adminSecret) {
+        return res.status(401).json({ success: false, error: 'No secret provided' });
+    }
+    
+    if (adminSecret !== process.env.ADMIN_SECRET) {
+        return res.status(401).json({ success: false, error: 'Incorrect secret' });
+    }
+    
+    return res.status(200).json({ success: true, message: 'Admin authenticated' });
 });
 
 // Public: list projects
