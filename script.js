@@ -376,7 +376,7 @@ window.addEventListener('scroll', () => {
 // ===== Counter Animation =====
 const animateCounters = () => {
     const cards = document.querySelectorAll('.info-card');
-    const targets = [15, 38, 76, 5];
+    const targets = [15, 38, 76, 3];
     
     const animateValue = (element, start, end, duration) => {
         let startTimestamp = null;
